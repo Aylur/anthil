@@ -1,0 +1,70 @@
+{
+  "name": "@anthil/gettext",
+  "version": "1.0.0",
+  "description": "Tiny zero-setup type-safe translations.",
+  "keywords": [
+    "gettext",
+    "i18n",
+    "l10n",
+    "translation",
+    "localization",
+    "icu",
+    "messageformat",
+    "po",
+    "react"
+  ],
+  "license": "MIT",
+  "author": "Kristóf Demeter",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aylur/anthil.git",
+    "directory": "gettext"
+  },
+  "homepage": "https://github.com/Aylur/anthil/tree/main/gettext#readme",
+  "bugs": {
+    "url": "https://github.com/Aylur/anthil/issues"
+  },
+  "bin": {
+    "anthil-gettext": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/gettext.d.ts",
+      "import": "./dist/gettext.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./po2json": {
+      "types": "./dist/po2json.d.ts",
+      "import": "./dist/po2json.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "rm -rf dist ; tsc"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "gettext-parser": "^8.0.0",
+    "intl-messageformat": "^11.2.13"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/gettext-parser": "^8.0.0",
+    "@types/node": "^24.2.0",
+    "@types/react": "^19.2.18",
+    "react": "^19.2.8",
+    "typescript": "^5.9.2"
+  }
+}
