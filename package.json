@@ -1,0 +1,19 @@
+{
+  "name": "anthil",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r --parallel run test",
+    "pack": "pnpm -r exec pnpm pack --pack-destination ../packs"
+  },
+  "prettier": {
+    "semi": false,
+    "proseWrap": "always"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.0"
+  }
+}
