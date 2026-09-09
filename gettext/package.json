@@ -1,6 +1,6 @@
 {
   "name": "@anthil/gettext",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tiny zero-setup type-safe translations.",
   "keywords": [
     "gettext",

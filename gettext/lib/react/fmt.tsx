@@ -55,10 +55,10 @@ export function createGettext(messages?: Messages): GettextReact {
     pgettext,
     ngettext,
     fmt<T extends Text<any>>(text: T, args: RichFmtArgs<T>): JSX.Element {
-      return richFormat(text, "en", args)
+      return richFormat(text, lang, args)
     },
     sfmt<T extends Text<any>>(text: T, args: StringFmtArgs<T>): string {
-      return stringFormat(text, "en", args)
+      return stringFormat(text, lang, args)
     },
   })
 }
