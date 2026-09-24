@@ -1,0 +1,75 @@
+{
+  "name": "@anthil/store",
+  "version": "1.0.0",
+  "description": "Tiny signal based stores.",
+  "keywords": [
+    "signal",
+    "observable",
+    "react",
+    "reactjs",
+    "reactive",
+    "model",
+    "state management"
+  ],
+  "license": "MIT",
+  "author": "Kristóf Demeter",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aylur/anthil.git",
+    "directory": "packages/store"
+  },
+  "homepage": "https://github.com/Aylur/anthil/tree/main/packages/store#readme",
+  "bugs": {
+    "url": "https://github.com/Aylur/anthil/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./decorators": "./src/decorators/stage3.ts",
+    "./legacy-decorators": "./src/decorators/stage2.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepack": "pnpm run clean && pnpm run build"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./decorators": {
+        "types": "./dist/decorators/stage3.d.ts",
+        "import": "./dist/decorators/stage3.js"
+      },
+      "./legacy-decorators": {
+        "types": "./dist/decorators/stage2.d.ts",
+        "import": "./dist/decorators/stage2.js"
+      },
+      "./react": {
+        "types": "./dist/react/index.d.ts",
+        "import": "./dist/react/index.js"
+      }
+    }
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

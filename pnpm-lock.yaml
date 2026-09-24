@@ -4,21 +4,39 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@types/node':
+      specifier: ^24.2.0
+      version: 24.13.3
+    '@types/react':
+      specifier: ^19.2.18
+      version: 19.2.18
+    react:
+      specifier: ^19.2.8
+      version: 19.2.8
+    typescript:
+      specifier: ^5.9.2
+      version: 5.9.3
+    vitest:
+      specifier: ^5.0.0
+      version: 5.0.0
+
 importers:
 
   .:
     devDependencies:
       '@types/react':
-        specifier: ^19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
       vitest:
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.0.0(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3))
 
-  gettext:
+  packages/gettext:
     dependencies:
       gettext-parser:
         specifier: ^8.0.0
@@ -31,28 +49,43 @@ importers:
         specifier: ^8.0.0
         version: 8.0.0
       '@types/node':
-        specifier: ^24.2.0
+        specifier: 'catalog:'
         version: 24.13.3
       '@types/react':
-        specifier: ^19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       react:
-        specifier: ^19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
         version: 5.9.3
 
-  router:
+  packages/router:
     devDependencies:
       '@types/react':
-        specifier: ^19.2.18
+        specifier: 'catalog:'
         version: 19.2.18
       react:
-        specifier: ^19.2.8
+        specifier: 'catalog:'
         version: 19.2.8
       typescript:
-        specifier: ^5.9.2
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.0(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3))
+
+  packages/store:
+    devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.18
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
+      typescript:
+        specifier: 'catalog:'
         version: 5.9.3
 
 packages:

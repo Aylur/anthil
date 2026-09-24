@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
+    "experimentalDecorators": true,
     "target": "ES2022",
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "jsx": "react-jsx",
 
-    "rootDir": "lib",
+    "rootDir": "src",
     "outDir": "dist",
     "declaration": true,
     "declarationMap": true,
@@ -21,5 +22,5 @@
     "noUncheckedSideEffectImports": true,
     "skipLibCheck": true
   },
-  "include": ["lib"]
+  "include": ["src"]
 }
