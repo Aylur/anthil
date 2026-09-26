@@ -1,5 +1,5 @@
-import IntlMessageFormat from "intl-messageformat"
-import { type JSX } from "react"
+import IntlMessageFormat, { type PrimitiveType } from "intl-messageformat"
+import { Children, type JSX, type ReactNode } from "react"
 import { type args, Gettext, type tags, type Text } from "../gettext.js"
 import type { PoJson } from "../po2json.js"
 
@@ -16,13 +16,31 @@ type StringFmtArgs<T> = T extends { [args]: infer Args }
   ? Prettify<Args>
   : never
 
+function keyed(parts: ReactNode): JSX.Element {
+  return <>{Children.toArray(parts)}</>
+}
+
 function richFormat<T extends Text<any>>(
   text: T,
   locale: string,
   fmtArgs: RichFmtArgs<T>,
 ): JSX.Element {
   const message = new IntlMessageFormat(text as string, locale)
-  return <>{message.format(fmtArgs)}</>
+  const args = fmtArgs as Record<
+    string,
+    PrimitiveType | ((chunk: JSX.Element) => JSX.Element)
+  >
+
+  const values = Object.fromEntries(
+    Object.entries(args).map(([key, value]) => [
+      key,
+      typeof value === "function"
+        ? (chunks: ReactNode) => value(keyed(chunks))
+        : value,
+    ]),
+  )
+
+  return keyed(message.format<ReactNode>(values))
 }
 
 function stringFormat<T extends Text<any>>(

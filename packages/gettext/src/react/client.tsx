@@ -1,14 +1,8 @@
 "use client"
 
-import {
-  createContext,
-  use,
-  useLayoutEffect,
-  useState,
-  type PropsWithChildren,
-} from "react"
+import { createContext, use, useMemo, type PropsWithChildren } from "react"
 import { createGettext, type GettextReact } from "./fmt.js"
-import type { Messages } from "../po2json.js"
+import type { PoJson } from "../po2json.js"
 
 const GettextContext = createContext(createGettext({ lang: "en" }))
 
@@ -17,15 +11,11 @@ export function GettextProvider({
   gettext,
   children,
 }: PropsWithChildren<
-  | { messages?: Messages; gettext?: never }
+  | { messages?: Partial<PoJson>; gettext?: never }
   | { messages?: never; gettext?: GettextReact }
 >) {
-  const [ctx, setGettext] = useState<GettextReact>(
+  const ctx = useMemo(
     () => gettext ?? createGettext(messages),
-  )
-
-  useLayoutEffect(
-    () => setGettext(() => gettext ?? createGettext(messages)),
     [gettext, messages],
   )
 
