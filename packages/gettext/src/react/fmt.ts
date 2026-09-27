@@ -1,5 +1,5 @@
 import IntlMessageFormat, { type PrimitiveType } from "intl-messageformat"
-import { Children, type JSX, type ReactNode } from "react"
+import { createElement, Fragment, type JSX, type ReactNode } from "react"
 import { type args, Gettext, type tags, type Text } from "../gettext.js"
 import type { PoJson } from "../po2json.js"
 
@@ -17,7 +17,9 @@ type StringFmtArgs<T> = T extends { [args]: infer Args }
   : never
 
 function keyed(parts: ReactNode): JSX.Element {
-  return <>{Children.toArray(parts)}</>
+  return Array.isArray(parts)
+    ? createElement(Fragment, null, ...parts)
+    : createElement(Fragment, null, parts)
 }
 
 function richFormat<T extends Text<any>>(
