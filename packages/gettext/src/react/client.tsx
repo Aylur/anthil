@@ -1,8 +1,8 @@
 "use client"
 
 import { createContext, use, useMemo, type PropsWithChildren } from "react"
+import type { PoJson } from "../gettext.js"
 import { createGettext, type GettextReact } from "./fmt.js"
-import type { PoJson } from "../po2json.js"
 
 const GettextContext = createContext(createGettext({ lang: "en" }))
 

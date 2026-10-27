@@ -1,7 +1,12 @@
 import IntlMessageFormat, { type PrimitiveType } from "intl-messageformat"
 import { createElement, Fragment, type JSX, type ReactNode } from "react"
-import { type args, Gettext, type tags, type Text } from "../gettext.js"
-import type { PoJson } from "../po2json.js"
+import {
+  type args,
+  Gettext,
+  type PoJson,
+  type tags,
+  type Text,
+} from "../gettext.js"
 
 type Messages = Partial<PoJson>
 type Prettify<T> = { [K in keyof T]: T[K] }
@@ -50,9 +55,12 @@ function stringFormat<T extends Text<any>>(
   locale: string,
   fmtArgs: StringFmtArgs<T>,
 ): string {
-  const message = new IntlMessageFormat(text as string, locale, undefined, {
-    ignoreTag: true,
-  })
+  const message = new IntlMessageFormat(
+    text as string,
+    locale,
+    {},
+    { ignoreTag: true },
+  )
   const result = message.format(fmtArgs)
   return Array.isArray(result) ? result.map(String).join("") : String(result)
 }

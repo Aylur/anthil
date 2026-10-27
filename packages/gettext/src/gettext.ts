@@ -1,5 +1,7 @@
 import type { GetArgs, GetTags } from "./icu.js"
-import type { Messages, PoJson } from "./po2json.js"
+
+export type Messages = { [ctx: string]: Record<string, string | string[]> }
+export type PoJson = { pluralForms: string; lang: string; messages: Messages }
 
 export declare const args: unique symbol
 export declare const tags: unique symbol

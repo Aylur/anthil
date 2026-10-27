@@ -45,8 +45,8 @@ function Component() {
 }
 ```
 
-`fmt` returns a React element and supports rich tags. Use `sfmt` when you
-need a plain string, for example in an attribute.
+`fmt` returns a React element and supports rich tags. Use `sfmt` when you need a
+plain string, for example in an attribute.
 
 ## Message Format
 
@@ -84,49 +84,48 @@ p("status", "Open")
 
 ## Adding translations
 
-1. To extract translatable text, use `xgettext`.
+Translations live in `.po` files, which are created and kept up to date from the
+source code using the `anthil-gettext` CLI.
+
+1. Create a `.po` file for each locale.
 
    ```sh
-   xgettext **/\*.ts **/\*.tsx \
-     --from-code=UTF-8 \
-     --output=messages.pot \
-     --language=JavaScript \
-     --keyword=p:1c,2 \
-     --keyword=t \
-     --keyword=n:1,2
+   pnpm exec anthil-gettext init hu
    ```
 
-   > [!TIP]
-   >
-   > You can scope translation files per page/path by adjusting the target
-   > list.
+2. Add the Vite plugin to import `.po` files directly.
 
-2. Init `.po` files
+   ```ts
+   // vite.config.ts
+   import gettext from "@anthil/gettext/vite"
 
-   ```sh
-   msginit --locale=yourlocale --input=messages.pot --no-translator
+   export default defineConfig({
+     plugins: [gettext()],
+   })
    ```
 
-3. After filling it in, generate a messages json file.
-
-   ```sh
-   pnpm exec anthil-gettext yourlocale.po yourlocale.json
+   ```ts
+   // vite-env.d.ts
+   /// <reference types="@anthil/gettext/po-module" />
    ```
 
-   The same conversion is available programmatically from
-   `@anthil/gettext/po2json`.
+   Imported `.po` files are checked against the source code. Missing and
+   untranslated messages are logged as warnings during development and fail
+   `vite build`.
 
-4. Wrap your app in a `GettextProvider`
+3. Wrap your app in a `GettextProvider`
 
    ```tsx
    import { GettextProvider } from "@anthil/gettext/react"
 
+   const locales = import.meta.glob("./po/*.po", { import: "default" })
+
    async function getMessages(locale: string) {
-     return await import(`./messages/${locale}.json`)
+     return await locales[`./po/${locale}.po`]()
    }
 
    async function Root() {
-     const messages = await getMessages("en")
+     const messages = await getMessages("hu")
 
      return (
        <GettextProvider messages={messages}>
@@ -138,22 +137,24 @@ p("status", "Open")
 
    > [!NOTE]
    >
-   > The provider is not concerned about how you fetch the messages or how
-   > you handle locale routes.
+   > The provider is not concerned about how you fetch the messages or how you
+   > handle locale routes.
+
+Untranslated messages fall back to the source text.
 
 ## Maintaining translations
 
-1. Regenerate the `.pot` file with `xgettext` as seen above
+After changing the source code, update every `.po` file.
 
-2. Merge messages
+```sh
+pnpm exec anthil-gettext merge
+```
 
-   ```sh
-   for po in po/*.po; do
-     msgmerge --update --backup=off "$po" po/messages.pot
-     # optionally remove obsolete messages
-     msgattrib --no-obsolete --output-file="$po" "$po"
-   done
-   ```
+To make sure the `.po` files are up to date, for example in CI, run
+
+```sh
+pnpm exec anthil-gettext check
+```
 
 ## Without React
 
@@ -161,7 +162,7 @@ The core `Gettext` class has no React dependency.
 
 ```ts
 import { Gettext } from "@anthil/gettext"
-import messages from "./messages/hu.json"
+import messages from "./po/hu.po"
 
 const { gettext: t, ngettext: n, pgettext: p } = new Gettext(messages)
 ```
