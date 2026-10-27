@@ -16,9 +16,44 @@ When iterating on a project you should not have to worry about
 pnpm add @anthil/gettext
 ```
 
-## Example
+## Usage
 
 Requires 0 setup to get started.
+
+### Vanilla
+
+```ts
+import { createGettext } from "@anthil/gettext/vanilla"
+
+const { gettext: t, ngettext: n, fmt, sfmt } = createGettext()
+
+const count = 3
+document.title = sfmt(
+  n("There is one apple", "Number of apples: {count}", count),
+  { count },
+)
+
+document.body.append(
+  fmt(t("Click <link>here</link> for more"), {
+    link: (chunk) => {
+      const a = document.createElement("a")
+      a.href = "/more"
+      a.append(chunk)
+      return a
+    },
+  }),
+)
+```
+
+Selecting locale means a new instance using `createGettext`
+
+```ts
+import huMessages from "./po/hu.po"
+
+const {} = createGettext(huMessages)
+```
+
+### React
 
 ```tsx
 import { useGettext } from "@anthil/gettext/react"
@@ -45,8 +80,32 @@ function Component() {
 }
 ```
 
-`fmt` returns a React element and supports rich tags. Use `sfmt` when you need a
-plain string, for example in an attribute.
+To translate, wrap your app in a `GettextProvider`.
+
+```tsx
+import { GettextProvider } from "@anthil/gettext/react"
+
+const locales = import.meta.glob("./po/*.po", { import: "default" })
+
+async function getMessages(locale: string) {
+  return await locales[`./po/${locale}.po`]()
+}
+
+async function Root() {
+  const messages = await getMessages("hu")
+
+  return (
+    <GettextProvider messages={messages}>
+      <App />
+    </GettextProvider>
+  )
+}
+```
+
+> [!NOTE]
+>
+> The provider is not concerned about how you fetch the messages or how you
+> handle locale routes.
 
 ## Message Format
 
@@ -73,7 +132,7 @@ For messages that might mean different things in different contexts use
 `pgettext`.
 
 ```ts
-const { pgettext: p } = useGettext()
+const { pgettext: p } = createGettext(messages)
 
 // "Open" as a verb (action)
 p("action", "Open")
@@ -106,39 +165,15 @@ source code using the `anthil-gettext` CLI.
 
    ```ts
    // vite-env.d.ts
-   /// <reference types="@anthil/gettext/po-module" />
+   /// <reference types="@anthil/gettext/po" />
    ```
 
    Imported `.po` files are checked against the source code. Missing and
    untranslated messages are logged as warnings during development and fail
    `vite build`.
 
-3. Wrap your app in a `GettextProvider`
-
-   ```tsx
-   import { GettextProvider } from "@anthil/gettext/react"
-
-   const locales = import.meta.glob("./po/*.po", { import: "default" })
-
-   async function getMessages(locale: string) {
-     return await locales[`./po/${locale}.po`]()
-   }
-
-   async function Root() {
-     const messages = await getMessages("hu")
-
-     return (
-       <GettextProvider messages={messages}>
-         <App />
-       </GettextProvider>
-     )
-   }
-   ```
-
-   > [!NOTE]
-   >
-   > The provider is not concerned about how you fetch the messages or how you
-   > handle locale routes.
+3. Pass the imported messages to `createGettext` or `GettextProvider`, as shown
+   in the [Vanilla](#vanilla) and [React](#react) sections.
 
 Untranslated messages fall back to the source text.
 
@@ -154,17 +189,6 @@ To make sure the `.po` files are up to date, for example in CI, run
 
 ```sh
 pnpm exec anthil-gettext check
-```
-
-## Without React
-
-The core `Gettext` class has no React dependency.
-
-```ts
-import { Gettext } from "@anthil/gettext"
-import messages from "./po/hu.po"
-
-const { gettext: t, ngettext: n, pgettext: p } = new Gettext(messages)
 ```
 
 ## License

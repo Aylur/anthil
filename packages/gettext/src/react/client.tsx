@@ -2,7 +2,7 @@
 
 import { createContext, use, useMemo, type PropsWithChildren } from "react"
 import type { PoJson } from "../gettext.js"
-import { createGettext, type GettextReact } from "./fmt.js"
+import { createGettext, type GettextReact } from "./create.js"
 
 const GettextContext = createContext(createGettext({ lang: "en" }))
 

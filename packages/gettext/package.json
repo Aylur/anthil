@@ -11,7 +11,8 @@
     "icu",
     "messageformat",
     "po",
-    "react"
+    "react",
+    "vite"
   ],
   "license": "MIT",
   "author": "Kristóf Demeter",
@@ -30,10 +31,10 @@
     "dist"
   ],
   "exports": {
-    ".": "./src/gettext.ts",
     "./react": "./src/react/index.ts",
+    "./vanilla": "./src/vanilla/index.ts",
     "./vite": "./src/vite.ts",
-    "./po-module": {
+    "./po": {
       "types": "./src/po-module.d.ts"
     }
   },
@@ -49,19 +50,19 @@
       "anthil-gettext": "./dist/cli.js"
     },
     "exports": {
-      ".": {
-        "types": "./dist/gettext.d.ts",
-        "import": "./dist/gettext.js"
-      },
       "./react": {
         "types": "./dist/react/index.d.ts",
         "import": "./dist/react/index.js"
+      },
+      "./vanilla": {
+        "types": "./dist/vanilla/index.d.ts",
+        "import": "./dist/vanilla/index.js"
       },
       "./vite": {
         "types": "./dist/vite.d.ts",
         "import": "./dist/vite.js"
       },
-      "./po-module": {
+      "./po": {
         "types": "./dist/po-module.d.ts"
       }
     }
@@ -88,6 +89,7 @@
     "@types/gettext-parser": "^8.0.0",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "happy-dom": "^21.0.4",
     "react": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.3.5",
