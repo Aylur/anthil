@@ -1,12 +1,6 @@
 import * as Signal from "./signal.js"
 
 /**
- * Scopes own child scopes, cleanup and mount callbacks.
- * Disposing a scope disposes its children recursively.
- */
-export type Scope = Signal.Scope
-
-/**
  * Get the current value and track it as a dependency in reactive scopes.
  * @returns The current value.
  */
@@ -114,7 +108,7 @@ export function subscribe<T>(
   callback: (prev?: T) => T,
 ): Signal.Fn {
   let first = true
-  const effect = new Signal.Effect<T>((prev) => {
+  const effect = new Signal.Effect<T>("render", (prev) => {
     track()
     if (first) {
       return void (first = false) as T
@@ -127,8 +121,8 @@ export function subscribe<T>(
 }
 
 /**
- * Run a function which tracks reactive values accessed within
- * and re-runs synchronously whenever they change.
+ * Schedule a function to run after the current root {@link Scope} returns,
+ * tracking reactive values accessed within and re-running whenever they change.
  *
  * Errors thrown by `fn` propagate to the code that triggered the run.
  *
@@ -149,82 +143,22 @@ export function subscribe<T>(
  * ```
  */
 export function effect<T = void>(fn: (prev?: T) => T): Signal.Fn {
-  const effect = new Signal.Effect(fn)
-  if (!effect.parent || effect.parent.mounted) {
-    effect.run()
-  } else {
-    Signal.onMount(() => effect.run())
-  }
+  const effect = new Signal.Effect("user", fn)
+  Signal.onMount(() => effect.run())
   return () => effect.dispose()
 }
 
 /**
- * Attach a cleanup callback to the current {@link Scope}.
+ * Like {@link effect}, but runs immediately and re-runs before user effects
+ * and mount callbacks.
  *
- * Cleanups run in reverse registration order, when the scope is disposed.
- *
- * @throws when called outside of a scope.
+ * @param fn Receives the value returned by the previous run.
+ * @returns A function that disposes the effect.
  */
-export function onCleanup(callback: Signal.Fn) {
-  Signal.onCleanup(callback)
-}
-
-/**
- * Attach a callback to run after the current {@link Scope} returns.
- * When the scope is already mounted, or there is no scope, the callback runs
- * immediately. Mount callbacks run untracked.
- */
-export function onMount(fn: Signal.Fn) {
-  const scope = Signal.getScope()
-  if (!scope || scope.mounted) {
-    Signal.untrack(fn)
-  } else {
-    Signal.onMount(fn)
-  }
-}
-
-/**
- * Lets you read values without tracking them.
- *
- * @example
- *
- * ```
- * let a: Accessor<number>
- * let b: Accessor<number>
- *
- * effect(() => {
- *  // will re-run when `a` changes but not when `b` changes
- *   print(a(), untrack(() => b()))
- * })
- * ```
- */
-export function untrack<T>(fn: () => T): T {
-  return Signal.untrack(fn)
-}
-
-/**
- * Group multiple updates so downstream computations run once after the batch
- * completes instead of after each individual update.
- *
- * @example
- *
- * ```
- * const [count, setCount] = createSignal(0);
- * const [total, setTotal] = createSignal(0);
- *
- * effect(() => console.log(`${count()} / ${total()}`)); // logs "0 / 0"
- *
- * setCount(1); // logs "1 / 0"
- * setTotal(5); // logs "1 / 5"
- *
- * batch(() => {
- *   setCount(2);
- *   setTotal(10);
- * }); // logs "2 / 10"
- * ```
- */
-export function batch(fn: Signal.Fn): void {
-  return Signal.batch(fn)
+export function renderEffect<T = void>(fn: (prev?: T) => T): Signal.Fn {
+  const effect = new Signal.Effect("render", fn)
+  effect.run()
+  return () => effect.dispose()
 }
 
 /**
@@ -282,7 +216,7 @@ export function createStore<S extends Store>(store: S): S {
         enumerable: true,
       })
     } else if ("get" in desc) {
-      const computed = new Signal.Computed(desc.get!.bind(obj))
+      const computed = new Signal.Computed(desc.get!.bind(obj), Object.is, null)
       Object.defineProperty(obj, key, {
         get: computed.get.bind(computed),
         set: desc.set,

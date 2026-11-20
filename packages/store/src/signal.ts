@@ -30,7 +30,8 @@ const QUEUED = 64
 const UNSET = 128
 const ERROR = 256
 
-const queue: Array<{ run: Fn }> = []
+const renderQueue: Array<{ run: Fn }> = []
+const userQueue: Array<{ run: Fn }> = []
 
 function runAll<T>(items: T[], fn: (item: T) => void, reverse: boolean): void {
   let threw = false
@@ -64,9 +65,11 @@ function setActiveScope(scope: Scope | null) {
 function flush() {
   let threw = false
   let error: unknown
-  while (queue.length > 0) {
+  ++batchDepth
+  while (renderQueue.length > 0 || userQueue.length > 0) {
     try {
-      queue.shift()!.run()
+      const job = renderQueue.shift() ?? userQueue.shift()
+      job!.run()
     } catch (e) {
       if (!threw) {
         threw = true
@@ -74,13 +77,35 @@ function flush() {
       }
     }
   }
+  --batchDepth
   if (threw) throw error
 }
 
-export function batch(fn: Fn) {
+/**
+ * Group multiple updates so downstream computations run once after the batch
+ * completes instead of after each individual update.
+ *
+ * @example
+ *
+ * ```
+ * const [count, setCount] = createSignal(0);
+ * const [total, setTotal] = createSignal(0);
+ *
+ * effect(() => console.log(`${count()} / ${total()}`)); // logs "0 / 0"
+ *
+ * setCount(1); // logs "1 / 0"
+ * setTotal(5); // logs "1 / 5"
+ *
+ * batch(() => {
+ *   setCount(2);
+ *   setTotal(10);
+ * }); // logs "2 / 10"
+ * ```
+ */
+export function batch<T>(fn: () => T): T {
   ++batchDepth
   try {
-    fn()
+    return fn()
   } finally {
     if (--batchDepth === 0) {
       flush()
@@ -88,6 +113,21 @@ export function batch(fn: Fn) {
   }
 }
 
+/**
+ * Lets you read values without tracking them.
+ *
+ * @example
+ *
+ * ```
+ * let a: Accessor<number>
+ * let b: Accessor<number>
+ *
+ * effect(() => {
+ *  // will re-run when `a` changes but not when `b` changes
+ *   print(a(), untrack(() => b()))
+ * })
+ * ```
+ */
 export function untrack<Args extends Array<any>, T>(
   fn: (...args: Args) => T,
   ...args: Args
@@ -104,8 +144,6 @@ export interface Scope {
   parent: Scope | null
   children?: Scope[]
   cleanups?: Fn[]
-  mounts?: Fn[]
-  mounted?: boolean
   disposed?: boolean
 
   dispose(): void
@@ -124,27 +162,50 @@ function attachScope(scope: Scope): void {
 
 export function runScope<T>(scope: Scope, fn: () => T): T {
   if (scope.disposed) throw new Error("scope is disposed")
-  const prevScope = setActiveScope(scope)
-  let result: T
-  try {
-    result = fn()
-    flushMounts(scope)
-  } catch (e) {
-    scope.mounts = []
-    throw e
-  } finally {
-    activeScope = prevScope
-  }
-  return result
+  return batch(() => {
+    const prevScope = setActiveScope(scope)
+    try {
+      return fn()
+    } catch (e) {
+      cancelMounts(scope)
+      throw e
+    } finally {
+      activeScope = prevScope
+    }
+  })
 }
 
-function flushMounts(scope: Scope): void {
-  if (scope.mounted) return
-  scope.mounted = true
-  const mounts = scope.mounts
-  scope.mounts = []
-  if (mounts) {
-    runAll(mounts, untrack, false)
+class MountJob {
+  owner = activeScope
+  fn: Fn
+
+  constructor(fn: Fn) {
+    this.fn = fn
+  }
+
+  run(): void {
+    const owner = this.owner
+    if (owner?.disposed) return
+    const prevScope = setActiveScope(owner)
+    try {
+      untrack(this.fn)
+    } finally {
+      activeScope = prevScope
+    }
+  }
+}
+
+function cancelMounts(scope: Scope): void {
+  for (let i = userQueue.length - 1; i >= 0; i--) {
+    const job = userQueue[i]
+    if (!(job instanceof MountJob)) continue
+
+    for (const s of ancestors(job.owner)) {
+      if (s === scope) {
+        userQueue.splice(i, 1)
+        break
+      }
+    }
   }
 }
 
@@ -153,8 +214,6 @@ function resetScope(scope: Scope): void {
   const cleanups = scope.cleanups
   scope.children = []
   scope.cleanups = []
-  scope.mounts = []
-  scope.mounted = false
   try {
     if (children) runAll(children, disposeChildScope, true)
   } finally {
@@ -195,18 +254,32 @@ export function getScope(): Scope | null {
   return activeScope
 }
 
+function* ancestors(scope: Scope | null) {
+  for (let s = scope; s; s = s.parent) yield s
+}
+
+/**
+ * Attach a cleanup callback to the current {@link Scope}.
+ *
+ * Cleanups run in reverse registration order, when the scope is disposed.
+ *
+ * @throws when called outside of a scope.
+ */
 export function onCleanup(fn: Fn): void {
   if (!activeScope) throw new Error("onCleanup called outside of a scope")
   activeScope.cleanups ??= []
   activeScope.cleanups.push(fn)
 }
 
+/**
+ * Schedule a callback to run after the outermost {@link Scope} or batch returns.
+ * Outside of a scope or batch the callback runs immediately. Mount callbacks
+ * run untracked and are skipped when their scope is disposed before they run.
+ */
 export function onMount(fn: Fn): void {
-  if (!activeScope) throw new Error("onMount called outside of a scope")
-  if (!activeScope.mounted) {
-    activeScope.mounts ??= []
-    activeScope.mounts.push(fn)
-  }
+  const job = new MountJob(fn)
+  if (batchDepth > 0) userQueue.push(job)
+  else job.run()
 }
 
 abstract class ReactiveNode implements Node {
@@ -286,12 +359,10 @@ export class Signal<T> extends ReactiveNode {
 }
 
 export class Computed<T> extends ReactiveNode implements Scope {
-  parent: Scope | null = activeScope
+  parent: Scope | null
   children: Scope[] = []
   cleanups: Fn[] = []
-  mounts: Fn[] = []
   context: Map<object, unknown> | null = null
-  mounted = false
   disposed = false
 
   value!: T
@@ -302,10 +373,12 @@ export class Computed<T> extends ReactiveNode implements Scope {
   constructor(
     getter: (prev?: T) => T,
     isEqual: Equals<NoInfer<T>> = Object.is,
+    parent: Scope | null = activeScope,
   ) {
     super(MUTABLE | DIRTY | UNSET)
     this.getter = getter
     this.isEqual = isEqual
+    this.parent = parent
     attachScope(this)
   }
 
@@ -377,24 +450,28 @@ export class Effect<T> extends ReactiveNode implements Scope {
   parent: Scope | null = activeScope
   children: Scope[] = []
   cleanups: Fn[] = []
-  mounts: Fn[] = []
   context: Map<object, unknown> | null = null
-  mounted = false
   disposed = false
 
   value?: T
   fn: (prev?: T) => T
+  queue: "user" | "render"
 
-  constructor(fn: (prev?: T) => T) {
+  /**
+   * @param queue user effects re-run after every render effect of the flush
+   */
+  constructor(queue: "user" | "render", fn: (prev?: T) => T) {
     super(WATCHING)
     this.fn = fn
+    this.queue = queue
     attachScope(this)
   }
 
   notify(): void {
     if (!(this.flags & QUEUED)) {
       this.flags |= QUEUED
-      queue.push(this)
+      if (this.queue === "user") userQueue.push(this)
+      else renderQueue.push(this)
     }
   }
 

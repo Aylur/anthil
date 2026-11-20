@@ -80,10 +80,7 @@ const unsubscribe = subscribe(count, () => console.log(count()))
 
 // track several accessors at once
 subscribe(
-  () => {
-    count()
-    total()
-  },
+  () => [count(), total()],
   () => console.log(count(), total()),
 )
 ```
